@@ -15,6 +15,11 @@ spec:
       containers:
       - name: modulo-b
         image: modulo-b:latest
+        imagePullPolicy: Never # Importante para o Minikube usar a imagem local
         ports:
         - containerPort: 50052
-        imagePullPolicy: IfNotPresent
+        env:
+        - name: ATRASO_MS
+          value: "300"       # Atraso configurável
+        - name: CARGA_CPU
+          value: "500000"    # Carga de CPU configurável

@@ -5,54 +5,61 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"encoding/json"
-    "net/http"
+    "time"       // Adicionado
+    "math/rand"  // Adicionado
+    "os"         // Adicionado
+    "strconv"    // Adicionado
 	"google.golang.org/grpc"
-
-	pb "projeto-catalogo/proto" 
+	pb "projeto-catalogo/proto" // Mantenha o import original se der erro
 )
 
 type servidor struct {
 	pb.UnimplementedInventarioServer
 }
 
-var estoque = map[string]*pb.EstoqueResponse{
-	"1": {Id: "1", Preco: 249.99, Quantidade: 78},
-	"2": {Id: "2", Preco: 450.50, Quantidade: 42},
+func getEnvInt(key string, defaultValue int) int {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
+	}
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
 }
 
 func (s *servidor) GetEstoque(ctx context.Context, req *pb.ProdutoRequest) (*pb.EstoqueResponse, error) {
-	idProduto := req.GetId()
-	log.Printf("Requisição recebida para o estoque do produto ID: %v", idProduto)
+    idProduto := req.GetId()
+    
+    // --- SIMULAÇÃO DE CARGA ---
+    atrasoMs := getEnvInt("ATRASO_MS", 100)
+    cargaCpu := getEnvInt("CARGA_CPU", 100000)
 
-	produto, existe := estoque[idProduto]
+    log.Printf("[Inventário] Req ID: %v | Config: Delay=%dms, CPU=%d loops", idProduto, atrasoMs, cargaCpu)
 
-	if existe {
-		return produto, nil
+    start := time.Now()
+    for i := 0; i < cargaCpu; i++ {
+        _ = float64(i) * rand.Float64()
+    }
+    
+    // Jitter (variação) para ficar mais realista
+    jitter := rand.Intn(atrasoMs/10 + 1)
+    time.Sleep(time.Duration(atrasoMs + jitter) * time.Millisecond)
+
+    log.Printf("[Inventário] Processamento finalizado em %v", time.Since(start))
+    // -----------------------------
+
+	if idProduto == "1" {
+		return &pb.EstoqueResponse{Preco: 150.00, Quantidade: 100}, nil
+	} else if idProduto == "2" {
+		return &pb.EstoqueResponse{Preco: 350.50, Quantidade: 50}, nil
 	}
 
-	return nil, fmt.Errorf("estoque para o produto com ID %s não encontrado", idProduto)
-}
-
-func iniciarServidorHttp() {
-    http.HandleFunc("/estoque/", func(w http.ResponseWriter, r *http.Request) {
-        id := r.URL.Path[len("/estoque/"):]
-        log.Printf("[REST] Requisição recebida para o estoque do ID: %v", id)
-
-        item, existe := estoque[id]
-        if existe {
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(item)
-        } else {
-            http.NotFound(w, r)
-        }
-    })
-    log.Println("Servidor REST Inventário escutando em :8082")
-    http.ListenAndServe(":8082", nil)
+	return nil, fmt.Errorf("produto com ID %s não encontrado no estoque", idProduto)
 }
 
 func main() {
-	go iniciarServidorHttp()
 	porta := ":50052"
 	lis, err := net.Listen("tcp", porta)
 	if err != nil {
@@ -60,7 +67,6 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-
 	pb.RegisterInventarioServer(s, &servidor{})
 
 	log.Printf("Servidor Inventário escutando em %v", lis.Addr())

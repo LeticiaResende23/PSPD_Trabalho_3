@@ -15,6 +15,13 @@ spec:
       containers:
       - name: modulo-a
         image: modulo-a:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 50051
-        imagePullPolicy: IfNotPresent
+        env:
+        - name: ATRASO_MS
+          value: "200"       
+        - name: CARGA_CPU
+          value: "500000"
+  
+
