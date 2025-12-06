@@ -22,4 +22,4 @@ spec:
         - name: ATRASO_MS
           value: "200"       # Atraso configurável
         - name: CARGA_CPU
-          value: "1000000"    # Carga de CPU configurável
+          value: "100000"    # Carga de CPU configurável
