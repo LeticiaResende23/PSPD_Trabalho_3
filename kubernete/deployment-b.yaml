@@ -20,6 +20,6 @@ spec:
         - containerPort: 50052
         env:
         - name: ATRASO_MS
-          value: "300"       # Atraso configurável
+          value: "200"       # Atraso configurável
         - name: CARGA_CPU
-          value: "500000"    # Carga de CPU configurável
+          value: "1000000"    # Carga de CPU configurável
